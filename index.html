@@ -29,7 +29,7 @@ button.big{grid-column:span 2;background:var(--ac);color:#fff;border-color:var(-
 input[type=range]{flex:1}
 #cfg{display:none;padding:10px 14px;border-bottom:1px solid var(--bd);gap:8px;flex-direction:column;font-size:13px;color:var(--mu)}#cfg label{display:flex;flex-direction:column;gap:2px}#cfg label.r{flex-direction:row;gap:8px;align-items:center}#cfg b{color:var(--fg)}.line{font-size:var(--fs,30px)!important}.full{grid-column:span 4}.pz{border-color:#d9534f;color:#d9534f}.pz.on{background:#d9534f;color:#fff}#cfg select{background:var(--cd);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:8px}.cue{font-size:calc(var(--fs,30px)*.72)!important;font-weight:700;font-style:normal!important;color:var(--ac)!important;background:var(--cd);border:1px solid var(--bd);border-left:5px solid var(--ac);border-radius:10px;padding:10px 12px;margin-bottom:16px!important}</style></head><body>
 <header><select id="sel"></select><span class="prog" id="prog"></span><button id="bCfg" style="padding:9px 12px">⚙️</button></header>
-<div id="cfg"><label>Sensibilidad: avanza al <b id="v_thr"></b>% de la frase<input type="range" id="s_thr" min="40" max="100" step="5"></label><label>Tolerancia a saltos de palabras: <b id="v_win"></b><input type="range" id="s_win" min="2" max="12" step="1"></label><label>Pausa antes de dictar (ms): <b id="v_pause"></b><input type="range" id="s_pause" min="0" max="2500" step="100"></label><label>Velocidad de la voz: <b id="v_rate"></b><input type="range" id="s_rate" min="0.7" max="1.5" step="0.1"></label><label>Tamaño de letra: <b id="v_fs"></b><input type="range" id="s_fs" min="20" max="46" step="2"></label><label>Si me trabo, recordar tras (seg): <b id="v_stall"></b><input type="range" id="s_stall" min="2" max="12" step="1"></label><label>Al recordar, decir:<select id="s_rem"><option value="l">Lo que falta del párrafo</option><option value="c">Lo que falta de la frase</option></select></label><label class="r"><input type="checkbox" id="s_cue"> Decir las indicaciones (🎬) en voz alta</label><label>Velocidad de las indicaciones: <b id="v_crate"></b><input type="range" id="s_crate" min="1.2" max="2.2" step="0.1"></label><label class="r"><input type="checkbox" id="s_full"> Exigir párrafo completo para avanzar</label><label class="r"><input type="checkbox" id="s_ign"> Ignorar el micrófono mientras dicta</label><button id="bRst">Restablecer</button><small>Tip: tocá cualquier palabra del texto para marcar dónde estás.</small></div>
+<div id="cfg"><label>Sensibilidad: avanza al <b id="v_thr"></b>% de la frase<input type="range" id="s_thr" min="40" max="100" step="5"></label><label>Tolerancia a saltos de palabras: <b id="v_win"></b><input type="range" id="s_win" min="2" max="12" step="1"></label><label>Pausa antes de dictar (ms): <b id="v_pause"></b><input type="range" id="s_pause" min="0" max="2500" step="100"></label><label>Velocidad de la voz: <b id="v_rate"></b><input type="range" id="s_rate" min="0.7" max="1.5" step="0.1"></label><label>Tamaño de letra: <b id="v_fs"></b><input type="range" id="s_fs" min="20" max="46" step="2"></label><label>Si me trabo, recordar tras (seg): <b id="v_stall"></b><input type="range" id="s_stall" min="2" max="12" step="1"></label><label>Al recordar, decir:<select id="s_rem"><option value="l">Lo que falta del párrafo</option><option value="c">Lo que falta de la frase</option></select></label><label>Voz del dictado:<select id="s_voice"></select></label><button id="bTest">▶ Probar voz</button><label>Esperar silencio antes de pasar a la siguiente frase (ms): <b id="v_hold"></b><input type="range" id="s_hold" min="300" max="2500" step="100"></label><label class="r"><input type="checkbox" id="s_cue"> Decir las indicaciones (🎬) en voz alta</label><label>Velocidad de las indicaciones: <b id="v_crate"></b><input type="range" id="s_crate" min="1.2" max="2.2" step="0.1"></label><label class="r"><input type="checkbox" id="s_full"> Exigir párrafo completo para avanzar</label><label class="r"><input type="checkbox" id="s_ign"> Ignorar el micrófono mientras dicta</label><button id="bRst">Restablecer</button><small>Tip: tocá cualquier palabra del texto para marcar dónde estás.</small></div>
 <main id="main"></main>
 <div class="heard" id="heard"></div>
 
@@ -100,10 +100,10 @@ var S=[
 ["Ambos miran al público","Gracias."]]}
 ];
 var $=function(i){return document.getElementById(i)};
-var DEF={thr:70,win:6,fs:30,pause:300,rate:1,ign:0,stall:4,full:1,rem:"l",cue:1,crate:1.7},D=Object.assign({},DEF);
+var DEF={thr:70,win:6,fs:30,pause:300,rate:1,ign:0,stall:4,full:1,rem:"l",cue:1,crate:1.7,hold:1000,voice:""},D=Object.assign({},DEF);
 try{Object.assign(D,JSON.parse(localStorage.getItem("apc2")||"{}"))}catch(x){}
 function save(){try{localStorage.setItem("apc2",JSON.stringify(D))}catch(x){}}
-var si=0,li=0,ci=0,ptr=0,toks=[],keys=[],chunks=[],dic=true,listening=false,rec=null,voice=null,timer=null,speaking=false,last=[],off=0,base=0,uid=0,done=false,paused=false,wasL=false,lastProg=Date.now(),cueSaid=false;
+var si=0,li=0,ci=0,ptr=0,toks=[],keys=[],chunks=[],dic=true,listening=false,rec=null,voice=null,timer=null,speaking=false,last=[],off=0,base=0,uid=0,done=false,paused=false,wasL=false,lastProg=Date.now(),cueSaid=false,lastHeard=0;
 var U=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciseis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidos","veintitres","veinticuatro","veinticinco","veintiseis","veintisiete","veintiocho","veintinueve"],T=["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"],H=["","ciento","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
 function n2w(n){if(n<30)return U[n];if(n<100){var u=n%10;return u?T[Math.floor(n/10)]+" y "+U[u]:T[Math.floor(n/10)]}if(n===100)return"cien";if(n<1000)return H[Math.floor(n/100)]+(n%100?" "+n2w(n%100):"");return String(n)}
 var ALIAS={half:["haf","jaf","jalf","alf","jaff"],combine:["combain","kombain","combai","combin"],freeman:["frimen","friman"],black:["blac","blak"],ravenholm:["rabenjolm","ravenjolm","rabenholm","raven"],dijck:["dijk","dick","daik"],araujo:["arauho","arajo","arauxo"]},alts=[];
@@ -111,7 +111,10 @@ function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f
 function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++)d[i]=[i];for(j=1;j<=n;j++)d[0][j]=j;for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n]}
 function sim(a,b){if(!a||!b)return false;if(a===b)return true;var L=Math.max(a.length,b.length),m=Math.min(a.length,b.length);if(m<4)return false;if(a.indexOf(b)===0||b.indexOf(a)===0)return true;return lev(a,b)<=(L>=8?2:1)}
 function setStatus(m){$("st").textContent=m}
-function pickVoice(){var v=speechSynthesis.getVoices();voice=v.find(function(x){return /es-AR/i.test(x.lang)})||v.find(function(x){return /es[-_](US|MX)/i.test(x.lang)})||v.find(function(x){return /^es/i.test(x.lang)})||null}
+function pickVoice(){var v=speechSynthesis.getVoices();
+  voice=(D.voice&&v.find(function(x){return x.name===D.voice}))||v.find(function(x){return /es-AR/i.test(x.lang)})||v.find(function(x){return /es[-_](US|MX)/i.test(x.lang)})||v.find(function(x){return /^es/i.test(x.lang)})||null;
+  var sel=$("s_voice");if(!sel)return;var es=v.filter(function(x){return /^es/i.test(x.lang)});if(!es.length)es=v;
+  sel.innerHTML='<option value="">Automática</option>'+es.map(function(x){return '<option value="'+x.name+'">'+x.name+' ('+x.lang+')</option>'}).join("");sel.value=D.voice||""}
 if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
 function chunkText(){var c=chunks[ci];return c?toks.slice(Math.max(ptr,c.s),c.e).join(" "):""}
 function mk(t,r){var u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:"es-ES";if(voice)u.voice=voice;u.rate=r;return u}
@@ -149,6 +152,14 @@ function render(){
 }
 function need(k){var c=chunks[k];if(k===chunks.length-1&&D.full)return c.e;return Math.min(c.e,c.s+Math.max(1,Math.ceil((c.e-c.s)*D.thr/100)))}
 function lineDone(){if(done)return;done=true;ptr=toks.length;render();clearTimeout(timer);timer=setTimeout(nextLine,D.pause+500)}
+function checkAdvance(){
+  if(paused||done||!toks.length||ci>=chunks.length||ptr<need(ci))return;
+  var c=chunks[ci],q=Date.now()-Math.max(lastProg,lastHeard);
+  if(q<(ptr>=c.e?Math.min(D.hold,500):D.hold))return;
+  while(ci<chunks.length&&ptr>=need(ci)){if(ci===chunks.length-1){lineDone();return}ci++}
+  render();speak(chunkText());
+}
+setInterval(checkAdvance,200);
 function recompute(){
   if(paused||!toks.length||done)return;
   var p=base;
@@ -156,15 +167,13 @@ function recompute(){
     while(p<toks.length&&!keys[p])p++;
     for(var j=p;j<Math.min(toks.length,p+D.win);j++){
       if(!keys[j])continue;
-      if(w.length<=2?(j===p&&(w===keys[j]||alts[j].indexOf(w)>=0)):(sim(w,keys[j])||alts[j].some(function(a){return sim(w,a)}))){p=j+1;break}
+      if(w.length<=3?(j<=p+1&&(w===keys[j]||alts[j].indexOf(w)>=0)):(sim(w,keys[j])||alts[j].some(function(a){return sim(w,a)}))){p=j+1;break}
     }
   });
   if(p>ptr){ptr=p;lastProg=Date.now()}
-  var adv=false;
-  while(ci<chunks.length&&ptr>=need(ci)){if(ci===chunks.length-1){lineDone();return}ci++;adv=true}
   render();
   var c=chunks[ci];if(c)setStatus("🎤 Escuchando · frase al "+Math.max(0,Math.round((ptr-c.s)/(c.e-c.s)*100))+"%");
-  if(adv)speak(chunkText());
+  checkAdvance();
 }
 function nextLine(){
   if(li<S[si].c.length-1)li++;else if(si<S.length-1){si++;li=0}else{setStatus("Fin del guion 🎉");return}
@@ -181,7 +190,7 @@ var lastLen=0;function startRec(){
   if(!SR){setStatus("Este navegador no soporta reconocimiento de voz. Usá Chrome en Android.");return}
   rec=new SR();rec.lang="es-AR";rec.continuous=true;rec.interimResults=true;
   rec.onresult=function(e){var t="";for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript+" ";
-    var nl=norm(t);if(nl.length<lastLen-3){off=0;base=ptr}else if(off>nl.length)off=nl.length;lastLen=nl.length;last=nl;
+    lastHeard=Date.now();var nl=norm(t);if(nl.length<lastLen-3){off=0;base=ptr}else if(off>nl.length)off=nl.length;lastLen=nl.length;last=nl;
     if(speaking&&D.ign){$("heard").textContent="⏳ dictando… (hablá cuando termine)";return}
     $("heard").textContent="…"+t.slice(-70);recompute()};
   rec.onerror=function(e){if(e.error==="not-allowed"||e.error==="service-not-allowed"){listening=false;$("bMic").classList.remove("on");setStatus("Micrófono bloqueado. Dale permiso o abrí el link directo en Chrome.")}};
@@ -194,7 +203,13 @@ $("sel").onchange=function(){si=+this.value;li=0;load(true)};
 $("bNext").onclick=nextLine;$("bPrev").onclick=prevLine;$("bSkip").onclick=skipChunk;
 $("bRep").onclick=function(){speak(chunkText())};
 $("bDic").onclick=function(){dic=!dic;this.classList.toggle("on",dic);if(!dic)cancelSpeech();else speak(chunkText())};
-$("bMic").onclick=function(){if(paused)return setStatus("⏸ Estás en pausa. Tocá Reanudar.");listening?stopRec():startRec()};
+function askMic(ok){
+  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setStatus("⚠️ Esta página no puede pedir el micrófono porque no está abierta desde un link https (o está dentro de otra app/archivo descargado). Abrila desde el link https directamente en Chrome.");return}
+  setStatus("Pidiendo permiso del micrófono… tocá «Permitir».");
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){st.getTracks().forEach(function(t){t.stop()});ok()}).catch(function(e){
+    setStatus(e&&e.name==="NotAllowedError"?"🚫 Permiso denegado o bloqueado. Tocá el candado junto a la dirección → Permisos → Micrófono → Permitir, y recargá. Si estás dentro de otra app, abrilo directo en Chrome.":"No pude acceder al micrófono ("+(e&&e.name)+").")})
+}
+$("bMic").onclick=function(){if(paused)return setStatus("⏸ Estás en pausa. Tocá Reanudar.");listening?stopRec():askMic(startRec)};
 function remind(){var c=chunks[ci];if(!c)return;var e=D.rem==="c"?c.e:toks.length;speak(toks.slice(Math.max(ptr,c.s),e).join(" "))}
 setInterval(function(){if(paused||!listening||speaking||done||!toks.length||!dic)return;if(Date.now()-lastProg>D.stall*1000){lastProg=Date.now();remind()}},500);
 function togglePause(){var b=$("bPause");
@@ -210,9 +225,12 @@ $("main").onclick=function(e){var i=e.target.getAttribute&&e.target.getAttribute
   i=+i;ptr=i;done=false;for(var k=0;k<chunks.length;k++)if(i>=chunks[k].s&&i<chunks[k].e)ci=k;
   base=ptr;off=last.length;render();speak(chunkText())};
 $("bCfg").onclick=function(){var c=$("cfg");c.style.display=c.style.display==="flex"?"none":"flex"};
-function applyCfg(){document.documentElement.style.setProperty("--fs",D.fs+"px");["thr","win","pause","rate","fs","stall","crate"].forEach(function(k){$("s_"+k).value=D[k];$("v_"+k).textContent=D[k]});$("s_ign").checked=!!D.ign;$("s_full").checked=!!D.full;$("s_cue").checked=!!D.cue;$("s_rem").value=D.rem}
-["thr","win","pause","rate","fs","stall","crate"].forEach(function(k){$("s_"+k).oninput=function(){D[k]=parseFloat(this.value);save();applyCfg()}});
-$("s_ign").onchange=function(){D.ign=this.checked?1:0;save()};$("s_cue").onchange=function(){D.cue=this.checked?1:0;save()};$("s_full").onchange=function(){D.full=this.checked?1:0;save()};$("s_rem").onchange=function(){D.rem=this.value;save()};
+function applyCfg(){document.documentElement.style.setProperty("--fs",D.fs+"px");["thr","win","pause","rate","fs","stall","crate","hold"].forEach(function(k){$("s_"+k).value=D[k];$("v_"+k).textContent=D[k]});$("s_ign").checked=!!D.ign;$("s_full").checked=!!D.full;$("s_cue").checked=!!D.cue;if(window.speechSynthesis)pickVoice();$("s_rem").value=D.rem}
+["thr","win","pause","rate","fs","stall","crate","hold"].forEach(function(k){$("s_"+k).oninput=function(){D[k]=parseFloat(this.value);save();applyCfg()}});
+$("s_ign").onchange=function(){D.ign=this.checked?1:0;save()};$("s_cue").onchange=function(){D.cue=this.checked?1:0;save()};$("s_voice").onchange=function(){D.voice=this.value;save();pickVoice();testVoice()};
+$("bTest").onclick=testVoice;
+function testVoice(){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();speechSynthesis.speak(mk("Así voy a dictarte el guion. Bueno, para empezar, elegimos Half-Life dos.",D.rate))}
+$("s_full").onchange=function(){D.full=this.checked?1:0;save()};$("s_rem").onchange=function(){D.rem=this.value;save()};
 $("bRst").onclick=function(){D=Object.assign({},DEF);save();applyCfg()};
 try{if(navigator.wakeLock)navigator.wakeLock.request("screen")}catch(x){}
 applyCfg();load(false);
