@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apuntador de guion</title>
+<style>
+:root{--bg:#f6f5f1;--fg:#1c1b19;--mu:#7a776e;--ac:#1d6fd6;--ok:#1b8a4b;--cd:#fff;--bd:#dcd9d0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121211;--fg:#f1efe8;--mu:#9a978d;--ac:#5aa2ff;--ok:#4cc380;--cd:#1c1c1a;--bd:#33322e}}
+:root[data-theme="dark"]{--bg:#121211;--fg:#f1efe8;--mu:#9a978d;--ac:#5aa2ff;--ok:#4cc380;--cd:#1c1c1a;--bd:#33322e}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column}
+header{padding:10px 14px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bd)}
+select{flex:1;min-width:0;background:var(--cd);color:var(--fg);border:1px solid var(--bd);border-radius:10px;padding:10px;font-size:15px}
+.prog{color:var(--mu);font-size:13px;white-space:nowrap}
+main{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;justify-content:center}
+.cue{color:var(--mu);font-style:italic;font-size:15px;margin-bottom:14px}
+.line{font-size:clamp(24px,6.2vw,34px);line-height:1.4;font-weight:500}
+.w{opacity:.45;transition:opacity .15s}
+.w.d{opacity:1;color:var(--ok)}
+.w.c{opacity:1}
+.chunk{border-bottom:2px solid var(--ac)}
+.status{padding:6px 14px;color:var(--mu);font-size:13px;min-height:28px}
+.heard{padding:0 14px 8px;color:var(--mu);font-size:13px;min-height:22px;font-style:italic}
+footer{padding:10px 12px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid var(--bd)}
+button{background:var(--cd);color:var(--fg);border:1px solid var(--bd);border-radius:12px;padding:14px 4px;font-size:15px;font-weight:600}
+button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.big{grid-column:span 2;background:var(--ac);color:#fff;border-color:var(--ac)}
+.opt{display:flex;gap:8px;align-items:center;padding:0 14px 8px;color:var(--mu);font-size:13px}
+input[type=range]{flex:1}
+#cfg{display:none;padding:10px 14px;border-bottom:1px solid var(--bd);gap:8px;flex-direction:column;font-size:13px;color:var(--mu)}#cfg label{display:flex;flex-direction:column;gap:2px}#cfg label.r{flex-direction:row;gap:8px;align-items:center}#cfg b{color:var(--fg)}.line{font-size:var(--fs,30px)!important}.full{grid-column:span 4}.pz{border-color:#d9534f;color:#d9534f}.pz.on{background:#d9534f;color:#fff}#cfg select{background:var(--cd);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:8px}.cue{font-size:calc(var(--fs,30px)*.72)!important;font-weight:700;font-style:normal!important;color:var(--ac)!important;background:var(--cd);border:1px solid var(--bd);border-left:5px solid var(--ac);border-radius:10px;padding:10px 12px;margin-bottom:16px!important}</style></head><body>
+<header><select id="sel"></select><span class="prog" id="prog"></span><button id="bCfg" style="padding:9px 12px">⚙️</button></header>
+<div id="cfg"><label>Sensibilidad: avanza al <b id="v_thr"></b>% de la frase<input type="range" id="s_thr" min="40" max="100" step="5"></label><label>Tolerancia a saltos de palabras: <b id="v_win"></b><input type="range" id="s_win" min="2" max="12" step="1"></label><label>Pausa antes de dictar (ms): <b id="v_pause"></b><input type="range" id="s_pause" min="0" max="2500" step="100"></label><label>Velocidad de la voz: <b id="v_rate"></b><input type="range" id="s_rate" min="0.7" max="1.5" step="0.1"></label><label>Tamaño de letra: <b id="v_fs"></b><input type="range" id="s_fs" min="20" max="46" step="2"></label><label>Si me trabo, recordar tras (seg): <b id="v_stall"></b><input type="range" id="s_stall" min="2" max="12" step="1"></label><label>Al recordar, decir:<select id="s_rem"><option value="l">Lo que falta del párrafo</option><option value="c">Lo que falta de la frase</option></select></label><label>Voz del dictado:<select id="s_voice"></select></label><small id="vhint"></small><button id="bTest">▶ Probar voz</button><label>Silencio antes de seguir, tras un punto (ms): <b id="v_hold"></b><input type="range" id="s_hold" min="100" max="2500" step="100"></label><label>Silencio antes de seguir, tras una coma (ms): <b id="v_holdc"></b><input type="range" id="s_holdc" min="0" max="1500" step="50"></label><label class="r"><input type="checkbox" id="s_cue"> Decir las indicaciones (🎬) en voz alta</label><label>Velocidad de las indicaciones: <b id="v_crate"></b><input type="range" id="s_crate" min="1.2" max="2.2" step="0.1"></label><label class="r"><input type="checkbox" id="s_whole"> Dictar el párrafo completo de una vez</label><label class="r"><input type="checkbox" id="s_full"> Exigir párrafo completo para avanzar</label><label class="r"><input type="checkbox" id="s_ign"> Ignorar el micrófono mientras dicta</label><button id="bRst">Restablecer</button><small>Tip: tocá cualquier palabra del texto para marcar dónde estás.</small></div>
+<main id="main"></main>
+<div class="heard" id="heard"></div>
+
+<div class="status" id="st"></div>
+<footer>
+<button id="bPrev">◀ Anterior</button>
+<button id="bRep">🔁 Repetir</button>
+<button id="bDic" class="on">🔊 Dictado</button>
+<button id="bMic">🎤 Escuchar</button>
+<button id="bNext" class="big">Siguiente ▶</button>
+<button id="bSkip" class="big">Frase ▶▶</button>
+<button id="bPause" class="full pz">🔇 Silenciarme / Pausa</button>
+</footer>
+<script>
+var S=[
+{t:"Diap. 2 · Introducción",c:[
+["Cambiar a la diapositiva dos · mirar al público","Bueno, para empezar, elegimos Half-Life dos porque nos pareció un videojuego que permite analizar bastante bien la relación entre sociedad y tecnología."],
+["Pausa breve","El juego transcurre principalmente en Ciudad diecisiete, una ciudad que se encuentra bajo el control del Combine, una fuerza que domina a la humanidad después de la llamada Guerra de las Siete Horas."],
+["Señalar la imagen de Ciudad diecisiete · no detenerse mucho","Como antecedente, tenemos al primer Half-Life, donde Gordon Freeman queda involucrado en el incidente de Black Mesa, que termina desencadenando una serie de acontecimientos que permiten la llegada de fuerzas extraterrestres a la Tierra."],
+["","En Half-Life dos, cuando Gordon vuelve a despertar, la situación ya cambió completamente: la humanidad está sometida y el Combine controla gran parte de la sociedad mediante diferentes tecnologías y estructuras de vigilancia."],
+["Mirar a Santiago","Y justamente eso es lo que nos interesó del juego."],
+["Mirar al público","No solamente aparece la tecnología como armas, máquinas o herramientas, sino también como algo que modifica la forma en que las personas viven y se relacionan."],
+["Gesto con mano abierta","Para analizarlo, vamos a trabajar cuatro ejes."],
+["Señalar los cuatro ejes","Sociedad de la información, dominación corporal y política, experiencia antigua y moderna de la tecnología, y aceleración."],
+["Mirar a Santiago · cederle la palabra","Y ahora Santiago va a comenzar con el primer eje."]]},
+{t:"Diap. 4 · Dominación corporal y política",c:[
+["Cuando Santiago termine, cambiar a tu diapositiva · mirar al público","Ahora vamos a hablar de la dominación corporal y política."],
+["Pausa breve","En este eje nos interesa pensar cómo la tecnología puede utilizarse para observar, clasificar y controlar a las personas."],
+["Señalar el título","Para relacionarlo con esto utilizamos los aportes de Van Dijck, que plantea que las tecnologías y las plataformas no solamente facilitan las relaciones sociales, sino que también pueden intervenir en la manera en que esas relaciones son registradas, organizadas y controladas."],
+["Mirar al público","En otras palabras, la tecnología puede convertirse en parte del propio mecanismo de control social."],
+["Pausa","Y esto podemos verlo claramente dentro de Half-Life dos."],
+["Mirar la pantalla","Por ejemplo, el Combine utiliza cámaras, puestos de control y a Protección Civil para vigilar a los ciudadanos."],
+["Señalar la animación de las cámaras · dejarla unos segundos","Estas cámaras muestran que la vigilancia forma parte del funcionamiento cotidiano de Ciudad diecisiete."],
+["","Las personas no solamente viven en una ciudad ocupada, sino que viven dentro de un sistema donde sus movimientos pueden ser observados y controlados."],
+["Mirar al público","Y esto es importante porque el control no se limita solamente a la fuerza física."],
+["Negación leve con la cabeza","También existe un control sobre dónde pueden desplazarse las personas, qué espacios pueden ocupar y cómo deben comportarse."],
+["Pausa breve","Por eso, la tecnología en este caso no funciona solamente como una herramienta."],
+["Señalar la animación nuevamente","Forma parte directamente de una estructura de poder."],
+["Mirar al público","En Half-Life dos, esto aparece de una forma muy visible: las cámaras, los puestos de control y los agentes del Combine forman parte de un sistema que organiza y limita la vida de los ciudadanos."],
+["Pausa","Entonces, podemos ver cómo una tecnología utilizada para observar también puede convertirse en una tecnología utilizada para controlar."],
+["Cambiar a la siguiente diapositiva","" ]]},
+{t:"Diap. 6 · Aceleración",c:[
+["Cambiar a diapositiva seis · mirar al público","El segundo eje que voy a desarrollar es el de la aceleración."],
+["Señalar el título","En este caso podemos relacionarlo con Araujo y con la idea de que el desarrollo tecnológico está acompañado por una búsqueda constante de innovación, eficiencia y aumento de la velocidad."],
+["Pausa breve","Este proceso de aceleración también puede generar incertidumbre y una sensación de que los cambios tecnológicos y sociales ocurren cada vez más rápido."],
+["Mirar al público","En Half-Life dos podemos observar esto tanto en la sociedad como en la propia experiencia del jugador."],
+["Preparar el video","Un ejemplo bastante claro aparece en Ravenholm, con los zombis rápidos."],
+["REPRODUCIR EL CLIP · no hablar los primeros segundos","Acá la velocidad no es solamente un detalle visual."],
+["Señalar el video","El jugador tiene mucho menos tiempo para reaccionar y tiene que responder rápidamente frente a lo que está ocurriendo."],
+["Mirar al público","Esto genera una experiencia de presión y de incertidumbre."],
+["Pausa · gesto amplio con la mano","Pero también podemos pensar la aceleración en una escala más amplia dentro de la historia del juego."],
+["","La sociedad humana pasó, en un período relativamente corto, de una situación normal a una sociedad completamente sometida por una estructura tecnológica mucho más avanzada."],
+["Señalar imagen del Combine o de la Ciudadela","El Combine utiliza diferentes tecnologías para imponer una nueva forma de organización social y mantener su control."],
+["Mirar al público","Entonces, la aceleración no aparece solamente en algo que se mueve rápido, como los zombis rápidos."],
+["Pausa breve","También podemos observarla en la velocidad con la que cambian las condiciones de vida de la sociedad y en cómo la tecnología permite producir esas transformaciones."],
+["Bajar la mano · quedar quieto","De esta manera, la aceleración tecnológica termina teniendo también consecuencias sociales."]]},
+{t:"Diap. 7 · Video general",c:[
+["Cambiar a la diapositiva del video · mirar al público","Y justamente, si juntamos los dos ejes que vimos, podemos observar que la tecnología en Half-Life dos no está simplemente puesta como decoración o como parte del escenario."],
+["Pausa","Está directamente relacionada con la forma en que funciona esa sociedad."],
+["Gesto hacia la pantalla","En este video podemos ver algunos de estos elementos funcionando dentro del propio juego."],
+["REPRODUCIR EL VIDEO DEL JUEGO · no hablar todo el tiempo, dejar pasar escenas",""]]},
+{t:"Diap. 8 · Reflexión final",c:[
+["Detener el video · cambiar a la diapositiva final · mirar al público","Como conclusión, podemos decir que los cuatro ejes terminan mostrando algo en común: en Half-Life dos, la tecnología no está separada de la sociedad."],
+["Señalar los cuatro ejes, uno por uno","Está presente en la información, en las formas de control, en la experiencia de las personas y también en la velocidad con la que se producen los cambios."],
+["SANTIAGO CONTINÚA: «Entonces, el juego no presenta la tecnología solamente como herramientas o máquinas, sino como algo que modifica directamente la vida social.»",""],
+["Mirar al público","Y también nos permite pensar que el desarrollo tecnológico no depende solamente de qué tecnología existe, sino de cómo se utiliza y qué lugar ocupa dentro de una sociedad."],
+["Pausa final","En definitiva, Half-Life dos muestra una sociedad profundamente transformada por la tecnología y nos permite pensar cómo esa tecnología puede modificar nuestra forma de vivir, relacionarnos y organizarnos."],
+["Ambos miran al público","Gracias."]]}
+];
+var $=function(i){return document.getElementById(i)};
+var DEF={thr:70,win:6,fs:30,pause:100,rate:1,ign:0,stall:4,full:1,rem:"l",cue:1,crate:1.7,hold:500,holdc:150,whole:1,voice:""},D=Object.assign({},DEF);
+try{Object.assign(D,JSON.parse(localStorage.getItem("apc3")||"{}"))}catch(x){}
+function save(){try{localStorage.setItem("apc3",JSON.stringify(D))}catch(x){}}
+var si=0,li=0,ci=0,ptr=0,toks=[],keys=[],chunks=[],dic=true,listening=false,rec=null,voice=null,timer=null,speaking=false,last=[],off=0,base=0,uid=0,done=false,paused=false,wasL=false,lastProg=Date.now(),cueSaid=false,lastHeard=0;
+var U=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciseis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidos","veintitres","veinticuatro","veinticinco","veintiseis","veintisiete","veintiocho","veintinueve"],T=["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"],H=["","ciento","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
+function n2w(n){if(n<30)return U[n];if(n<100){var u=n%10;return u?T[Math.floor(n/10)]+" y "+U[u]:T[Math.floor(n/10)]}if(n===100)return"cien";if(n<1000)return H[Math.floor(n/100)]+(n%100?" "+n2w(n%100):"");return String(n)}
+var ALIAS={half:["haf","jaf","jalf","alf","jaff"],combine:["combain","kombain","combai","combin"],freeman:["frimen","friman"],black:["blac","blak"],ravenholm:["rabenjolm","ravenjolm","rabenholm","raven"],dijck:["dijk","dick","daik"],araujo:["arauho","arajo","arauxo"]},alts=[];
+function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s]/g," ").replace(/\d+/g,function(m){return n2w(+m)}).split(/\s+/).filter(Boolean)}
+function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++)d[i]=[i];for(j=1;j<=n;j++)d[0][j]=j;for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n]}
+function sim(a,b){if(!a||!b)return false;if(a===b)return true;var L=Math.max(a.length,b.length),m=Math.min(a.length,b.length);if(m<4)return false;if(a.indexOf(b)===0||b.indexOf(a)===0)return true;return lev(a,b)<=(L>=8?2:1)}
+function setStatus(m){$("st").textContent=m}
+function pickVoice(){var v=speechSynthesis.getVoices();
+  voice=(D.voice&&v.find(function(x){return x.name===D.voice}))||v.find(function(x){return /es-AR/i.test(x.lang)})||v.find(function(x){return /es[-_](US|MX)/i.test(x.lang)})||v.find(function(x){return /^es/i.test(x.lang)})||null;
+  var sel=$("s_voice");if(!sel)return;var es=v.filter(function(x){return /^es/i.test(x.lang)});if(!es.length)es=v;
+  sel.innerHTML='<option value="">Automática</option>'+es.map(function(x){return '<option value="'+x.name+'">'+x.name+' ('+x.lang+')</option>'}).join("");sel.value=D.voice||"";var h=$("vhint");if(h)h.textContent=es.length<=2?"Tu celular solo ofrece "+es.length+" voz en español. Para más: Ajustes > Administración general > Salida de texto a voz.":""}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function chunkText(){var c=chunks[ci];return c?toks.slice(Math.max(ptr,c.s),c.e).join(" "):""}
+function mk(t,r){var u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:"es-ES";if(voice)u.voice=voice;u.rate=r;return u}
+function speak(t,wc){
+  if(paused||!dic||!("speechSynthesis" in window))return;
+  var cue="";if(wc&&!cueSaid&&D.cue){cue=(S[si].c[li][0]||"").replace(/·/g,". ").replace(/[«»]/g,"");cueSaid=true}
+  t=t||"";if(!t&&!cue)return;
+  clearTimeout(timer);var id=++uid;speaking=true;
+  timer=setTimeout(function(){
+    speechSynthesis.cancel();
+    var f=function(){if(id!==uid||!speaking)return;setTimeout(function(){if(id!==uid)return;speaking=false;if(D.ign){off=last.length;base=ptr}lastProg=Date.now()},300)};
+    var c=cue?mk(cue,D.crate):null,m=t?mk(t,D.rate):null,e=m||c;
+    e.onend=f;e.onerror=f;
+    if(c)speechSynthesis.speak(c);if(m)speechSynthesis.speak(m);
+    setTimeout(f,800+t.length*75/D.rate+cue.length*75/D.crate);
+  },D.pause);
+}
+function cancelSpeech(){clearTimeout(timer);uid++;speaking=false;if("speechSynthesis" in window)speechSynthesis.cancel()}
+function load(sp){
+  cancelSpeech();cueSaid=false;var l=S[si].c[li];toks=l[1]?l[1].split(/\s+/):[];
+  keys=toks.map(function(t){return norm(t)[0]||""});
+  alts=toks.map(function(t){var p=norm(t),a=p.slice(1);(ALIAS[p[0]]||[]).forEach(function(x){a.push(x)});return a});
+  chunks=[];var s=0;
+  toks.forEach(function(t,i){if((/[,.:;?!]$/.test(t)&&i+1-s>=4)||i===toks.length-1){chunks.push({s:s,e:i+1});s=i+1}});
+  if(D.whole&&toks.length)chunks=[{s:0,e:toks.length}];
+  ci=0;ptr=0;base=0;off=last.length;done=false;lastProg=Date.now();render();
+  if(sp)speak(chunkText(),1);
+}
+function render(){
+  var h='';if(S[si].c[li][0])h+='<div class="cue">🎬 '+S[si].c[li][0]+'</div>';
+  if(!toks.length){h+='<div class="line" style="color:var(--mu)">(Sin texto: usá «Siguiente»)</div>'}
+  else{h+='<div class="line">';var c=chunks[ci];
+    toks.forEach(function(t,i){var cl="w",inC=c&&i>=c.s&&i<c.e;if(i<ptr)cl+=" d";else if(inC)cl+=(chunks.length>1?" c chunk":" c");
+      h+='<span class="'+cl+'" data-i="'+i+'">'+t+'</span> '});h+='</div>'}
+  $("main").innerHTML=h;$("prog").textContent=(li+1)+"/"+S[si].c.length;$("sel").value=si;
+}
+function need(k){var c=chunks[k];if(k===chunks.length-1&&D.full)return (c.e-c.s<=3?c.e:c.e-1);return Math.min(c.e,c.s+Math.max(1,Math.ceil((c.e-c.s)*D.thr/100)))}
+function lineDone(){if(done)return;done=true;ptr=toks.length;render();clearTimeout(timer);timer=setTimeout(nextLine,D.pause+100)}
+function checkAdvance(){
+  if(paused||done||!toks.length||ci>=chunks.length||ptr<need(ci))return;
+  var c=chunks[ci],q=Date.now()-Math.max(lastProg,lastHeard);
+  var cm=/[,;:]$/.test(toks[c.e-1]||"");if(q<(ptr>=c.e?(cm?D.holdc:D.hold):Math.max(D.hold,800)))return;
+  while(ci<chunks.length&&ptr>=need(ci)){if(ci===chunks.length-1){lineDone();return}ci++}
+  render();speak(chunkText());
+}
+setInterval(checkAdvance,200);
+function recompute(){
+  if(paused||!toks.length||done)return;
+  var p=base;
+  last.slice(off).forEach(function(w){
+    while(p<toks.length&&!keys[p])p++;
+    for(var j=p;j<Math.min(toks.length,p+D.win);j++){
+      if(!keys[j])continue;
+      if(w.length<=3?(j<=p+1&&(w===keys[j]||alts[j].indexOf(w)>=0)):(sim(w,keys[j])||alts[j].some(function(a){return sim(w,a)}))){p=j+1;break}
+    }
+  });
+  if(p>ptr){ptr=p;lastProg=Date.now()}
+  render();
+  var c=chunks[ci];if(c)setStatus("🎤 Escuchando · frase al "+Math.max(0,Math.round((ptr-c.s)/(c.e-c.s)*100))+"%");
+  checkAdvance();
+}
+function nextLine(){
+  if(li<S[si].c.length-1)li++;else if(si<S.length-1){si++;li=0}else{setStatus("Fin del guion 🎉");return}
+  load(true);
+}
+function prevLine(){if(li>0)li--;else if(si>0){si--;li=S[si].c.length-1}load(true)}
+function skipChunk(){
+  if(!toks.length)return nextLine();
+  ptr=chunks[ci].e;if(ci>=chunks.length-1){lineDone();return}
+  ci++;base=ptr;off=last.length;render();speak(chunkText());
+}
+var lastLen=0;function startRec(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){setStatus("Este navegador no soporta reconocimiento de voz. Usá Chrome en Android.");return}
+  rec=new SR();rec.lang="es-AR";rec.continuous=true;rec.interimResults=true;
+  rec.onresult=function(e){var t="";for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript+" ";
+    lastHeard=Date.now();var nl=norm(t);if(nl.length<lastLen-3){off=0;base=ptr}else if(off>nl.length)off=nl.length;lastLen=nl.length;last=nl;
+    if(speaking&&D.ign){$("heard").textContent="⏳ dictando… (hablá cuando termine)";return}
+    $("heard").textContent="…"+t.slice(-70);recompute()};
+  rec.onerror=function(e){if(e.error==="not-allowed"||e.error==="service-not-allowed"){listening=false;$("bMic").classList.remove("on");setStatus("Micrófono bloqueado. Dale permiso o abrí el link directo en Chrome.")}};
+  rec.onend=function(){last=[];lastLen=0;off=0;base=ptr;if(listening){try{rec.start()}catch(x){}}};
+  try{rec.start();listening=true;$("bMic").classList.add("on");setStatus("🎤 Escuchando…");speak(chunkText(),1)}catch(x){setStatus("No pude activar el micrófono")}
+}
+function stopRec(){listening=false;$("bMic").classList.remove("on");if(rec){try{rec.stop()}catch(x){}}setStatus("Micrófono apagado")}
+S.forEach(function(s,i){var o=document.createElement("option");o.value=i;o.textContent=s.t;$("sel").appendChild(o)});
+$("sel").onchange=function(){si=+this.value;li=0;load(true)};
+$("bNext").onclick=nextLine;$("bPrev").onclick=prevLine;$("bSkip").onclick=skipChunk;
+$("bRep").onclick=function(){speak(chunkText())};
+$("bDic").onclick=function(){dic=!dic;this.classList.toggle("on",dic);if(!dic)cancelSpeech();else speak(chunkText())};
+function askMic(ok){
+  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setStatus("⚠️ Esta página no puede pedir el micrófono porque no está abierta desde un link https (o está dentro de otra app/archivo descargado). Abrila desde el link https directamente en Chrome.");return}
+  setStatus("Pidiendo permiso del micrófono… tocá «Permitir».");
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){st.getTracks().forEach(function(t){t.stop()});ok()}).catch(function(e){
+    setStatus(e&&e.name==="NotAllowedError"?"🚫 Permiso denegado o bloqueado. Tocá el candado junto a la dirección → Permisos → Micrófono → Permitir, y recargá. Si estás dentro de otra app, abrilo directo en Chrome.":"No pude acceder al micrófono ("+(e&&e.name)+").")})
+}
+$("bMic").onclick=function(){if(paused)return setStatus("⏸ Estás en pausa. Tocá Reanudar.");listening?stopRec():askMic(startRec)};
+function remind(){var c=chunks[ci];if(!c)return;var e=D.rem==="c"?c.e:toks.length;speak(toks.slice(Math.max(ptr,c.s),e).join(" "))}
+setInterval(function(){if(paused||!listening||speaking||done||!toks.length||!dic)return;if(Date.now()-Math.max(lastProg,lastHeard)>D.stall*1000){lastProg=Date.now();remind()}},500);
+function togglePause(){var b=$("bPause");
+  if(!paused){paused=true;wasL=listening;cancelSpeech();listening=false;if(rec){try{rec.stop()}catch(x){}}
+    $("bMic").classList.remove("on");b.textContent="▶ Reanudar";b.classList.add("on");$("main").style.opacity=.45;
+    setStatus("⏸ En pausa. Tocá Reanudar para seguir donde quedaste.")}
+  else{paused=false;b.textContent="🔇 Silenciarme / Pausa";b.classList.remove("on");$("main").style.opacity=1;
+    lastProg=Date.now();last=[];off=0;base=ptr;
+    if(done){clearTimeout(timer);timer=setTimeout(nextLine,500)}
+    else if(wasL)startRec();else speak(chunkText())}}
+$("bPause").onclick=togglePause;
+$("main").onclick=function(e){var i=e.target.getAttribute&&e.target.getAttribute("data-i");if(i===null||i===undefined)return;
+  i=+i;ptr=i;done=false;for(var k=0;k<chunks.length;k++)if(i>=chunks[k].s&&i<chunks[k].e)ci=k;
+  base=ptr;off=last.length;render();speak(chunkText())};
+$("bCfg").onclick=function(){var c=$("cfg");c.style.display=c.style.display==="flex"?"none":"flex"};
+function applyCfg(){document.documentElement.style.setProperty("--fs",D.fs+"px");["thr","win","pause","rate","fs","stall","crate","hold","holdc"].forEach(function(k){$("s_"+k).value=D[k];$("v_"+k).textContent=D[k]});$("s_ign").checked=!!D.ign;$("s_full").checked=!!D.full;$("s_cue").checked=!!D.cue;$("s_whole").checked=!!D.whole;if(window.speechSynthesis)pickVoice();$("s_rem").value=D.rem}
+["thr","win","pause","rate","fs","stall","crate","hold","holdc"].forEach(function(k){$("s_"+k).oninput=function(){D[k]=parseFloat(this.value);save();applyCfg()}});
+$("s_ign").onchange=function(){D.ign=this.checked?1:0;save()};$("s_cue").onchange=function(){D.cue=this.checked?1:0;save()};$("s_whole").onchange=function(){D.whole=this.checked?1:0;save();load(false)};$("s_voice").onchange=function(){D.voice=this.value;save();pickVoice();testVoice()};
+$("bTest").onclick=testVoice;
+function testVoice(){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();speechSynthesis.speak(mk("Así voy a dictarte el guion. Bueno, para empezar, elegimos Half-Life dos.",D.rate))}
+$("s_full").onchange=function(){D.full=this.checked?1:0;save()};$("s_rem").onchange=function(){D.rem=this.value;save()};
+$("bRst").onclick=function(){D=Object.assign({},DEF);save();applyCfg()};
+try{if(navigator.wakeLock)navigator.wakeLock.request("screen")}catch(x){}
+applyCfg();load(false);
+setStatus("Tocá 🎤 Escuchar para empezar (con auricular puesto).");
+</script></body></html>
